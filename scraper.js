@@ -62,13 +62,13 @@ async function execute() {
                         result
                     );
                     // TODO - call FaunaDB util method here!
-                    await logScraperRun(
-                        scraper.name,
-                        isSuccess,
-                        new Date() - startTime,
-                        startTime,
-                        numberAppointments
-                    );
+                    // await logScraperRun(
+                    //     scraper.name,
+                    //     isSuccess,
+                    //     new Date() - startTime,
+                    //     startTime,
+                    //     numberAppointments
+                    // );
                     return result;
                 });
             results.push(returnValue);
@@ -83,12 +83,9 @@ async function execute() {
                 scrapedResultsArray.push(result);
             }
         }
-
-        const cachedResults = await fetch(
-            "https://mzqsa4noec.execute-api.us-east-1.amazonaws.com/prod"
-        )
-            .then((res) => res.json())
-            .then((unpack) => JSON.parse(unpack.body).results);
+        const cachedResults = await s3.getFile("/", "first.json")
+            .then((data) => JSON.parse(data).body)
+            .then((data) => JSON.parse(data).results);
 
         let finalResultsArray = [];
         if (process.argv.length <= 2) {
@@ -120,24 +117,24 @@ async function execute() {
             //console.log("The following data would be published:");
             //console.dir(responseJson, { depth: null });
             file.write("out.json", webData);
-            logGlobalMetric("SuccessfulRun", 1, new Date());
-            logGlobalMetric(
-                "Duration",
-                new Date() - globalStartTime,
-                new Date()
-            );
+            // logGlobalMetric("SuccessfulRun", 1, new Date());
+            // logGlobalMetric(
+            //     "Duration",
+            //     new Date() - globalStartTime,
+            //     new Date()
+            // );
             return responseJson;
         } else {
             const uploadResponse = await s3.saveWebData(
                 webData,
                 responseJson.timestamp
             );
-            logGlobalMetric("SuccessfulRun", 1, new Date());
-            logGlobalMetric(
-                "Duration",
-                new Date() - globalStartTime,
-                new Date()
-            );
+            // logGlobalMetric("SuccessfulRun", 1, new Date());
+            // logGlobalMetric(
+            //     "Duration",
+            //     new Date() - globalStartTime,
+            //     new Date()
+            // );
             return uploadResponse;
         }
     };
