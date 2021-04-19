@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 // const { Client } = require("@googlemaps/google-maps-services-js");
-const { getLatLngPelias } = require("./lib/distance-utils");
+const { getLatLngPelias, getPeliasStreetAddress } = require("./lib/distance-utils");
 const { generateKey } = require("./data/dataDefaulter");
 const axios = require("axios");
 const axiosRetry = require("axios-retry");
@@ -39,28 +39,34 @@ const getGeocode = async (name, street, city, zip) => {
 };
 
 const getAllCoordinates = async (locations, cachedResults) => {
-    const existingLocations = cachedResults.reduce((acc, location) => {
-        const { latitude, longitude, street } = location;
-        if (latitude && longitude) {
-            acc[generateKey(location)] = {
-                latitude,
-                longitude,
-                street
-            };
-            return acc;
-        } else {
-            return acc;
+    const existingLocations = await cachedResults.reduce(async (acc, location) => {
+        try {
+            const accum = await acc
+            const { latitude, longitude, street } = location;
+            const address = street === undefined ? await getPeliasStreetAddress(latitude, longitude) : street
+            if (latitude && longitude) {
+                accum[generateKey(location)] = {
+                    latitude,
+                    longitude,
+                    address
+                };
+                return accum;
+            } else {
+                return accum;
+            }    
+        } catch (e) {
+            console.log(`get all coords error:${e}`)
         }
-    }, {});
+    }, Promise.resolve({}));
 
     const coordinateData = await Promise.all(
         locations.map(async (location) => {
             const { name = "", street = "", city= "", zip = "" } = location;
             const locationInd = generateKey(location);
 
-            // if (existingLocations[locationInd]) {
-            //     return { ...location, ...existingLocations[locationInd] };
-            // } else {
+            if (existingLocations[locationInd]) {
+                return { ...location, ...existingLocations[locationInd] };
+            } else {
                 const locationData = await getGeocode(name, street,city, zip);
 
                 if (locationData) {
@@ -72,7 +78,7 @@ const getAllCoordinates = async (locations, cachedResults) => {
                             locationData?.lng,
                     };
                 } else return location;
-            // }
+            }
         })
     );
     return coordinateData;

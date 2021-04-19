@@ -83,7 +83,7 @@ async function execute() {
                 scrapedResultsArray.push(result);
             }
         }
-        const cachedResults = await s3.getFile("/", "first.json")
+        const cachedResults = await s3.getFile("/", "data.json")
             .then((data) => JSON.parse(data).body)
             .then((data) => JSON.parse(data).results);
 
@@ -117,24 +117,12 @@ async function execute() {
             //console.log("The following data would be published:");
             //console.dir(responseJson, { depth: null });
             file.write("out.json", webData);
-            // logGlobalMetric("SuccessfulRun", 1, new Date());
-            // logGlobalMetric(
-            //     "Duration",
-            //     new Date() - globalStartTime,
-            //     new Date()
-            // );
             return responseJson;
         } else {
             const uploadResponse = await s3.saveWebData(
                 webData,
                 responseJson.timestamp
             );
-            // logGlobalMetric("SuccessfulRun", 1, new Date());
-            // logGlobalMetric(
-            //     "Duration",
-            //     new Date() - globalStartTime,
-            //     new Date()
-            // );
             return uploadResponse;
         }
     };
